@@ -121,19 +121,19 @@ controller مورد استفاده قرار می گیرد تا درخواست ه
 
 در این پروژه 3 کتابخانه کلاس و یک برنامه وب وجود دارد که ارتباط هر کدام با معماری پیاز را توضیح می دهیم.
 
-1. OA.Data
+## 1. OA.Data
 
 یک کتابخانه کلاس است که شامل کلاس های POCO و نشان دهنده ی لایه دامنه موجودیت ها یا Domain Entities معماری پیاز است.این کلاس ها در حقیقت برای ساخت جداول دیتابیس استفاده می شوند و بخش مرکزی برنامه است.
 
-2. OA.Repo
+## 2. OA.Repo
 
 کتابخانه کلاس دوم شامل یک Generic Repository کلاس و پیاده سازی رابط ها یا interface ها و کلاس DbContext است. Entity FrameWork با الگوی Code First برای دسترسی به داده ها یک کلاس context از Dbcontext ارث بری میکند.
 
-3.OA.Service
+## 3.OA.Service
 
 کتابخانه کلاس سوم نگه دارنده منطق تجاری و رابط ها است.این رابط ها ارتباط بین لایه رابط کاربری و منطق دسترسی دیتا را برقرار می کنند.از آنجایی که از طریق رابط ها ارتباط برقرار می کنند برنامه هایی با جفت شدگی شل ایجاد می کنند. این پروژه نشان دهنده لایه Repository در معماری پیاز است.
 
-4. OA.Web
+## 4. OA.Web
 
 این پروژه Asp.net Core است که برای ساخت تست های واحد یا Web Api ها مورد استفاده قرار می گیرد.خارجی ترین لایه است  که برای تعامل کاربر با برنامه استفاده می شود و با استفاده از اصل  وارونه سازی وابستگی ها برنامه هایی با جفت شدگی شل ایجاد می کند و معادل لایه UI در معماری پیاز است.
 
@@ -167,6 +167,84 @@ namespace OA.Data
 
 ```
 
+همچنین شامل دو موجودیت دیگه به نام User و UserProfile است که هر دو از BaseEntity  ارث بری می کنند.
 
+![One to One User-UserProfile relationship][3]
+
+```Csharp
+
+namespace OA.Data  
+{  
+    public class User:BaseEntity  
+    {  
+        public string UserName { get; set; }  
+        public string Email { get; set; }  
+        public string Password { get; set; }  
+        public virtual UserProfile UserProfile { get; set; }  
+    }  
+}  
+
+```
+
+```Csharp
+
+using Microsoft.EntityFrameworkCore.Metadata.Builders;  
+  
+namespace OA.Data  
+{  
+    public class UserMap  
+    {  
+        public UserMap(EntityTypeBuilder<User> entityBuilder)  
+        {  
+            entityBuilder.HasKey(t => t.Id);  
+            entityBuilder.Property(t => t.Email).IsRequired();  
+            entityBuilder.Property(t => t.Password).IsRequired();  
+            entityBuilder.Property(t => t.Email).IsRequired();  
+            entityBuilder.HasOne(t => t.UserProfile).WithOne(u => u.User).HasForeignKey<UserProfile>(x => x.Id);  
+        }  
+    }  
+}  
+
+```
+
+```Csharp
+
+namespace OA.Data  
+{  
+    public class UserProfile:BaseEntity  
+    {  
+        public string FirstName { get; set; }  
+        public string LastName { get; set; }  
+        public string Address { get; set; }  
+        public virtual User User { get; set; }  
+    }  
+}  
+
+```
+
+
+```Csharp
+
+using Microsoft.EntityFrameworkCore.Metadata.Builders;  
+  
+namespace OA.Data  
+{  
+    public class UserProfileMap  
+    {  
+        public UserProfileMap(EntityTypeBuilder<UserProfile> entityBuilder)  
+        {  
+            entityBuilder.HasKey(t => t.Id);  
+            entityBuilder.Property(t => t.FirstName).IsRequired();  
+            entityBuilder.Property(t => t.LastName).IsRequired();  
+            entityBuilder.Property(t => t.Address);    
+        }  
+    }  
+}  
+
+```
+
+
+
+لینک اصلی محتوا [Onion Architecture](https://www.c-sharpcorner.com/article/onion-architecture-in-asp-net-core-mvc/)
 
 </div>
