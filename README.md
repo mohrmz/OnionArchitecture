@@ -166,9 +166,13 @@ namespace OA.Data
 }  
 
 ```
+
 <div dir="rtl">
+  
 همچنین شامل دو موجودیت دیگه به نام User و UserProfile است که هر دو از BaseEntity  ارث بری می کنند.
+
 </div>
+
 
 ![One to One User-UserProfile relationship][3]
 
