@@ -248,6 +248,240 @@ namespace OA.Data
 
 ```
 
+<div dir="rtl">
+  
+  # لایه Repository
+  
+  حالا لایه دوم از معماری پیاز را ایجاد می کنیم که همان لایه Repository است.برای ساخت این لایه ما یک کتابخانه کلاس به نام OA.Repo ایجاد می کنیم که مخرن و داده و کلاس های context را نگه داری می کند.
+  
+  پروژه OA.Repo شامل DataContext است. ADO.NET Entity Framework Code First برای دسترسی به داده به یک کلاس context که از DBCOntext ارث بری می کند نیاز دارد بنابرین کلاس ApplicationContext را ایجاد می کنیم
+  
+  در این کلاس متد OnModelCreating() را باز نویسی می کنیم . این متد زمان نمونه سازی اولیه کلاس context فراخوانی می شود 
+  
+    
+</div>
+  
+  ```Csharp
+  
+  using Microsoft.EntityFrameworkCore;  
+using OA.Data;  
+  
+namespace OA.Repo  
+{  
+    public class ApplicationContext : DbContext  
+    {  
+        public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)  
+        {  
+        }  
+        protected override void OnModelCreating(ModelBuilder modelBuilder)  
+        {  
+            base.OnModelCreating(modelBuilder);  
+            new UserMap(modelBuilder.Entity<User>());  
+            new UserProfileMap(modelBuilder.Entity<UserProfile>());  
+        }  
+    }  
+} 
+
+
+sing OA.Data;  
+using System.Collections.Generic;  
+  
+namespace OA.Repo  
+{  
+    public interface IRepository<T> where T : BaseEntity  
+    {  
+        IEnumerable<T> GetAll();  
+        T Get(long id);  
+        void Insert(T entity);  
+        void Update(T entity);  
+        void Delete(T entity);  
+        void Remove(T entity);  
+        void SaveChanges();  
+    }  
+}  
+
+
+using Microsoft.EntityFrameworkCore;  
+using OA.Data;  
+using System;  
+using System.Collections.Generic;  
+using System.Linq;  
+  
+namespace OA.Repo  
+{  
+    public class Repository<T> : IRepository<T> where T : BaseEntity  
+    {  
+        private readonly ApplicationContext context;  
+        private DbSet<T> entities;  
+        string errorMessage = string.Empty;  
+  
+        public Repository(ApplicationContext context)  
+        {  
+            this.context = context;  
+            entities = context.Set<T>();  
+        }  
+        public IEnumerable<T> GetAll()  
+        {  
+            return entities.AsEnumerable();  
+        }  
+  
+        public T Get(long id)  
+        {  
+            return entities.SingleOrDefault(s => s.Id == id);  
+        }  
+        public void Insert(T entity)  
+        {  
+            if (entity == null)  
+            {  
+                throw new ArgumentNullException("entity");  
+            }  
+            entities.Add(entity);  
+            context.SaveChanges();  
+        }  
+  
+        public void Update(T entity)  
+        {  
+            if (entity == null)  
+            {  
+                throw new ArgumentNullException("entity");  
+            }  
+            context.SaveChanges();  
+        }  
+  
+        public void Delete(T entity)  
+        {  
+            if (entity == null)  
+            {  
+                throw new ArgumentNullException("entity");  
+            }  
+            entities.Remove(entity);  
+            context.SaveChanges();  
+        }  
+        public void Remove(T entity)  
+        {  
+            if (entity == null)  
+            {  
+                throw new ArgumentNullException("entity");  
+            }  
+            entities.Remove(entity);              
+        }  
+  
+        public void SaveChanges()  
+        {  
+            context.SaveChanges();  
+        }  
+    }  
+}  
+
+
+  ```
+
+
+<div dir="rtl">
+  
+  # لایه Service
+  
+  سومین لایه که همان لایه سرویس است و پروژه دیگری به نام OA.Service ایجاد می کنیم که شامل interface و پیاده سازی آن ها و رابطی است بین لایه UI و Repository تا جفت شدگی را کاهش دهد 
+  
+ </div>
+
+```Csharp
+
+using OA.Data;  
+using System.Collections.Generic;  
+  
+namespace OA.Service  
+{  
+    public  interface IUserService  
+    {  
+        IEnumerable<User> GetUsers();  
+        User GetUser(long id);  
+        void InsertUser(User user);  
+        void UpdateUser(User user);  
+        void DeleteUser(long id);  
+    }  
+}  
+
+using OA.Data;  
+using OA.Repo;  
+using System.Collections.Generic;  
+  
+namespace OA.Service  
+{  
+    public class UserService:IUserService  
+    {  
+        private IRepository<User> userRepository;  
+        private IRepository<UserProfile> userProfileRepository;  
+  
+        public UserService(IRepository<User> userRepository, IRepository<UserProfile> userProfileRepository)  
+        {  
+            this.userRepository = userRepository;  
+            this.userProfileRepository = userProfileRepository;  
+        }  
+  
+        public IEnumerable<User> GetUsers()  
+        {  
+            return userRepository.GetAll();  
+        }  
+  
+        public User GetUser(long id)  
+        {  
+            return userRepository.Get(id);  
+        }  
+  
+        public void InsertUser(User user)  
+        {  
+            userRepository.Insert(user);  
+        }  
+        public void UpdateUser(User user)  
+        {  
+            userRepository.Update(user);  
+        }  
+  
+        public void DeleteUser(long id)  
+        {              
+            UserProfile userProfile = userProfileRepository.Get(id);  
+            userProfileRepository.Remove(userProfile);  
+            User user = GetUser(id);  
+            userRepository.Remove(user);  
+            userRepository.SaveChanges();  
+        }  
+    }  
+}  
+
+using OA.Data;  
+  
+namespace OA.Service  
+{  
+    public interface IUserProfileService  
+    {  
+        UserProfile GetUserProfile(long id);  
+    }  
+}  
+
+using OA.Data;  
+using OA.Repo;  
+  
+namespace OA.Service  
+{  
+    public class UserProfileService: IUserProfileService  
+    {  
+        private IRepository<UserProfile> userProfileRepository;  
+  
+        public UserProfileService(IRepository<UserProfile> userProfileRepository)  
+        {             
+            this.userProfileRepository = userProfileRepository;  
+        }  
+  
+        public UserProfile GetUserProfile(long id)  
+        {  
+            return userProfileRepository.Get(id);  
+        }  
+    }  
+}  
+
+```
+
 
 
 لینک اصلی محتوا [Onion Architecture](https://www.c-sharpcorner.com/article/onion-architecture-in-asp-net-core-mvc/)
